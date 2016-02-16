@@ -59,11 +59,13 @@ int drawLogo(G15Screen* screen){
 }
 
 void keyboardHandlerThread(G15AppsData * Keyboard) {
-    unsigned int pressedKey;
+    unsigned int pressedKey=0;
     int change = -1;
     int retval=0;
     int ret, stam;
     bool front=-1;
+    unsigned int keystate=0;
+    int foo=0;
     printf("Light: %d\n", G15DAEMON_KEY_HANDLER);
     printf("L1: %d L2: %d L3: %d L4: %d L5: %d\n", G15_KEY_L1, G15_KEY_L2, G15_KEY_L3, G15_KEY_L4, G15_KEY_L5);
     printf("M1: %d M2: %d M3: %d MR: %d\n", G15_KEY_M1, G15_KEY_M2, G15_KEY_M3, G15_KEY_MR);
@@ -76,16 +78,13 @@ void keyboardHandlerThread(G15AppsData * Keyboard) {
 		printf("return val is: %d, stam: %d\n", ret, stam);
 		usleep(1*SEC2MICRO);
 		while(1) {
-			recv(screenFD,&pressedKey,4,0);
-			//pressedKey = g15_send_cmd (param->g15screen_fd, G15DAEMON_GET_KEYSTATE, NULL);
 			//printf("keyState: %d L1: %d L2: %d L3: %d L4: %d L5: %d\n",pressedKey, G15_KEY_L1, G15_KEY_L2, G15_KEY_L3, G15_KEY_L4, G15_KEY_L5);
+			recv(screenFD,&pressedKey,4,0);
 			retval = g15_send_cmd (screenFD, G15DAEMON_IS_FOREGROUND, 0);
 			if(!pressedKey)
 				continue;
 
 			//g15_send_cmd(param->g15screen_fd, G15DAEMON_SWITCH_PRIORITIES, NULL);
-
-
 			if(retval){
 			  if(retval==1 && retval!=front){
 				  front=1;
@@ -176,7 +175,7 @@ struct G15Screen_s
 	int id;
 	char* name;				//screen name
 	int background;
-	int g15screen_fd;
+	int screen_fd;
 	g15canvas *canvas;
 
 	drawFuncPtrDef drawFunc;
@@ -187,10 +186,6 @@ G15AppsData *newKeyboard(){
 }
 int setKeyBoard(G15AppsData *this){
 	this->screens[0] = NULL;
-	/*this->screens[0] = newScreen();
-	bool ret = setScreen(this->screens[0], "Senia");
-	if(ret==EXIT_FAILURE)
-		return EXIT_FAILURE;*/
 
 	this->numOfScreens=0;
 	this->lastPressedKey=-1;
@@ -213,7 +208,7 @@ G15Screen* getScreen(G15AppsData *this, int screenID){
 	if(this->screens[screenID] != NULL)
 		return this->screens[screenID];
 	else
-		return EXIT_FAILURE;
+		return NULL;
 }
 void* getHandlerThread(G15AppsData *this){
 	return &this->handlerThread;
@@ -228,7 +223,7 @@ g15canvas* getCanvasByID(G15AppsData *this, int screenID){
 }
 int getScreenFDByID(G15AppsData *this, int screenID){
 	if(this->screens[screenID] != NULL)
-		return this->screens[screenID]->g15screen_fd;
+		return this->screens[screenID]->screen_fd;
 	else
 		return -1;
 }
@@ -253,7 +248,7 @@ void deleteAllScreens(G15AppsData *this){
 	int i;
 	for(i=0;i<MAX_SCREENS && this->screens[i] == NULL;i++){
 		g15r_clearScreen (this->screens[i]->canvas, G15_COLOR_WHITE);
-		g15_close_screen (this->screens[i]->g15screen_fd);
+		g15_close_screen (this->screens[i]->screen_fd);
 
 		free(this->screens[i]->canvas);
 		deleteScreen(this->screens[i]);
@@ -292,8 +287,8 @@ int setScreen(G15Screen *this, char* name,  int (*drawFuncPtr)(G15Screen*)){
 	this->background=0;
 	this->background = 0;
 	this->canvas = (g15canvas *) malloc (sizeof (g15canvas));
-	this->g15screen_fd = 0;
-	if ((this->g15screen_fd = new_g15_screen (G15_G15RBUF)) < 0)
+	this->screen_fd = 0;
+	if ((this->screen_fd = new_g15_screen (G15_G15RBUF)) < 0)
 	{
 		fprintf (stderr, "Sorry, can't connect to g15daemon\n");
 		//TODO Break here..
@@ -310,7 +305,7 @@ g15canvas* getCanvas(G15Screen *this){
 	return this->canvas;
 }
 int getScreenFD(G15Screen *this){
-	return (this->g15screen_fd);
+	return (this->screen_fd);
 }
 drawFuncPtrDef getDrawFunc(G15Screen* this){
 	return this->drawFunc;

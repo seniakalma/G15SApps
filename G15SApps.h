@@ -18,8 +18,7 @@
 #include <errno.h>
 #include <pwd.h>
 #include <fcntl.h>
-
-
+#include <assert.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include "stdbool.h"
@@ -28,6 +27,8 @@
 #include <libg15.h>
 #include <libg15render.h>
 #include <g15daemon_client.h>
+
+#include "SYSINFO.h"
 
 #define SEC2MICRO 1000000
 #define MAX_SCREENS 5
