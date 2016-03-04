@@ -20,6 +20,9 @@ double bytesToGigabytes(long long int num);
 int getNumberOfCores();
 // From http://stackoverflow.com/questions/63166/how-to-determine-cpu-and-memory-consumption-from-inside-a-process
 double getCurrentValue();
+double getCPULoadByLine(int line);
+double getCPULoadByCore(int core);
+
 
 // Memory
 double getTotalPhysicalMem();

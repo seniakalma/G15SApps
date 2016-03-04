@@ -7,25 +7,29 @@ int main (int argc, char *argv[])
 	long page_size = sysconf(_SC_PAGE_SIZE);
 	long st = pages * page_size;
 	st/=1000*1000;*/
+	double load[3];
+	int i=0;
 
-
-	long double a[4], b[4], loadavg;
-	FILE *fp;
-	char dump[50];
+	int** cores = malloc(getNumberOfCores() * sizeof(int));
 
 	for(;;)
 	{
-		fp = fopen("/proc/stat","r");
-		fscanf(fp,"%*s %Lf %Lf %Lf %Lf",&a[0],&a[1],&a[2],&a[3]);
-		fclose(fp);
-		sleep(1);
+		printf("Number Of cores: %d \n", getNumberOfCores());
+		for(i=0;i<getNumberOfCores();i++)
+			printf("Core %d utilization is : %f \n", i, getCPULoadByCore(i));
+		printf("Total avraged CPU utilization is : %f \n", getCurrentValue());
 
-		fp = fopen("/proc/stat","r");
-		fscanf(fp,"%*s %Lf %Lf %Lf %Lf",&b[0],&b[1],&b[2],&b[3]);
-		fclose(fp);
+		if (getloadavg(load, 3) != -1)
+			printf("load average : %f , %f , %f\n", load[0],load[1],load[2]);
 
-		loadavg = ((b[0]+b[1]+b[2]) - (a[0]+a[1]+a[2])) / ((b[0]+b[1]+b[2]+b[3]) - (a[0]+a[1]+a[2]+a[3]));
-		printf("The current CPU utilization is : %Lf %\n",loadavg*100);
+
+		printf("Total physical mem: %f \n", getTotalPhysicalMem());
+		printf("Used physical mem: %f \n", getUsedPhysicalMem());
+
+		printf("Total virtual mem: %f \n", getTotalVirtualMem());
+		printf("Used virtual mem: %f \n\n", getUsedVirutalMem());
+		printf("===================================\n");
+		sleep(2);
 	}
 
 	for(;;){
@@ -40,7 +44,7 @@ int main (int argc, char *argv[])
 
 		sleep(3);
 	}
-
+/*
 	FILE *cpuInfo;
 	cpuInfo = fopen("/proc/cpuinfo","r");
     char line[256];
@@ -51,10 +55,10 @@ int main (int argc, char *argv[])
         //printf("%s", line);
         char *token;
 
-        /* get the first token */
+        // get the first token
         token = strtok(line, s);
 
-        /* walk through other tokens */
+        // walk through other tokens
 
         match = !strncmp(token,"model" ,5);
         while( token != NULL && match)
@@ -77,17 +81,21 @@ int main (int argc, char *argv[])
 	fclose(cpuinfo);
 
 
-
+*/
 	printf("New, Width: %d, Hight: %d\n", G15_LCD_WIDTH, G15_LCD_HEIGHT);
 	G15AppsData *G15Keyboard = newKeyboard();
 	setKeyBoard(G15Keyboard);
+
+	//ret = g15_send_cmd (screenFD, G15DAEMON_MKEYLEDS, G15_LED_M1 | G15_LED_M2 | sh);
 
 	//Create first screen(SENIA KALMA)
 	G15Screen* logoScreen = createNewScreen(G15Keyboard,"SENIA LOGO", &drawLogo );
 
 
+
 	//Create second screen(Test)
-	//G15Screen* testScreen = (G15Screen*)createNewScreen(G15Keyboard, "Test", &drawTest);
+	G15Screen* testScreen = (G15Screen*)createNewScreen(G15Keyboard, "Test", &drawTest);
+
 
 
 	//	Draw all screens

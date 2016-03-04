@@ -26,37 +26,69 @@ void init(){
 
 
 double getCurrentValue(){
-	double percent;
-	FILE* file;
-	unsigned long long totalUser, totalUserLow, totalSys, totalIdle, total;
+	long double a[4], b[4], loadavg;
+	FILE *fp;
+	char dump[50];
 
+    fp = fopen("/proc/stat","r");
+    fscanf(fp,"%*s %Lf %Lf %Lf %Lf",&a[0],&a[1],&a[2],&a[3]);
+    fclose(fp);
+    sleep(1);
 
-	file = fopen("/proc/stat", "r");
-	fscanf(file, "cpu %llu %llu %llu %llu", &totalUser, &totalUserLow,
-	&totalSys, &totalIdle);
-	fclose(file);
+    fp = fopen("/proc/stat","r");
+    fscanf(fp,"%*s %Lf %Lf %Lf %Lf",&b[0],&b[1],&b[2],&b[3]);
+    fclose(fp);
 
+    loadavg = ((b[0]+b[1]+b[2]) - (a[0]+a[1]+a[2])) / ((b[0]+b[1]+b[2]+b[3]) - (a[0]+a[1]+a[2]+a[3]));
 
-	if (totalUser < lastTotalUser || totalUserLow < lastTotalUserLow ||
-		totalSys < lastTotalSys || totalIdle < lastTotalIdle){
-		//Overflow detection. Just skip this value.
-		percent = -1.0;
-	}
-	else{
-		total = (totalUser - lastTotalUser) + (totalUserLow - lastTotalUserLow) +
-		(totalSys - lastTotalSys);
-		percent = total;
-		total += (totalIdle - lastTotalIdle);
-		percent /= total;
-		percent *= 100;
-	}
-	lastTotalUser = totalUser;
-	lastTotalUserLow = totalUserLow;
-	lastTotalSys = totalSys;
-	lastTotalIdle = totalIdle;
+	return loadavg;
+}
+//First line - Avg for all cores, 2nd - for first core, ..
+double getCPULoadByLine(int line){
+	int i;
+	long double a[4], b[4], loadavg;
+	FILE *fp;
+	char dump[50];
 
+    fp = fopen("/proc/stat","r");
+    for(i=0;i<line;i++)
+    	fscanf(fp,"%*s %Lf %Lf %Lf %Lf",&a[0],&a[1],&a[2],&a[3]);
+    fclose(fp);
+    sleep(1);
 
-	return percent;
+    fp = fopen("/proc/stat","r");
+    fscanf(fp,"%*s %Lf %Lf %Lf %Lf",&b[0],&b[1],&b[2],&b[3]);
+    fclose(fp);
+
+    loadavg = ((b[0]+b[1]+b[2]) - (a[0]+a[1]+a[2])) / ((b[0]+b[1]+b[2]+b[3]) - (a[0]+a[1]+a[2]+a[3]));
+
+	return loadavg;
+}
+double getCPULoadByCore(int core){
+	//First line - Avg for all cores, 2nd - for first core, ..
+	return getCPULoadByLine(core+1);
+}
+
+// TODO: FINISH THIS, READ ALL DATA AT ONCE.
+int** getCPUCoresLoad(int numOfCores){
+	int i;
+	long double a[4], b[4], loadavg;
+	FILE *fp;
+	char dump[50];
+
+    fp = fopen("/proc/stat","r");
+    for(i=1;i<numOfCores+1;i++)
+    	fscanf(fp,"%*s %Lf %Lf %Lf %Lf",&a[0],&a[1],&a[2],&a[3]);
+    fclose(fp);
+    sleep(1);
+
+    fp = fopen("/proc/stat","r");
+    fscanf(fp,"%*s %Lf %Lf %Lf %Lf",&b[0],&b[1],&b[2],&b[3]);
+    fclose(fp);
+
+    loadavg = ((b[0]+b[1]+b[2]) - (a[0]+a[1]+a[2])) / ((b[0]+b[1]+b[2]+b[3]) - (a[0]+a[1]+a[2]+a[3]));
+
+	return NULL;
 }
 
 
@@ -130,5 +162,3 @@ double getUsedSwapMem(){
 
     return bytesToGigabytes(physMemUsed);
 }
-
-

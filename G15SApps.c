@@ -62,10 +62,8 @@ void keyboardHandlerThread(G15AppsData * Keyboard) {
     unsigned int pressedKey=0;
     int change = -1;
     int retval=0;
-    int ret, stam;
+    int  stam;
     bool front=-1;
-    unsigned int keystate=0;
-    int foo=0;
     printf("Light: %d\n", G15DAEMON_KEY_HANDLER);
     printf("L1: %d L2: %d L3: %d L4: %d L5: %d\n", G15_KEY_L1, G15_KEY_L2, G15_KEY_L3, G15_KEY_L4, G15_KEY_L5);
     printf("M1: %d M2: %d M3: %d MR: %d\n", G15_KEY_M1, G15_KEY_M2, G15_KEY_M3, G15_KEY_MR);
@@ -73,9 +71,8 @@ void keyboardHandlerThread(G15AppsData * Keyboard) {
     unsigned char sh=NULL;
     int screenFD = getScreenFDByID(Keyboard, 0);
     if(screenFD != -1){
-		ret = g15_send_cmd (screenFD, G15DAEMON_MKEYLEDS, G15_LED_M1 | G15_LED_M2 | sh);
 		stam = g15_recv_oob_answer(screenFD);
-		printf("return val is: %d, stam: %d\n", ret, stam);
+		printf("return val is:, stam: %d\n", stam);
 		usleep(1*SEC2MICRO);
 		while(1) {
 			//printf("keyState: %d L1: %d L2: %d L3: %d L4: %d L5: %d\n",pressedKey, G15_KEY_L1, G15_KEY_L2, G15_KEY_L3, G15_KEY_L4, G15_KEY_L5);
@@ -166,7 +163,6 @@ struct G15AppsData_s
 
 	int numOfScreens;
 	int lastPressedKey;
-	unsigned char MKeysState;
 	int BrightnessLevel;
 };
 
@@ -175,6 +171,7 @@ struct G15Screen_s
 	int id;
 	char* name;				//screen name
 	int background;
+	unsigned char MKeysState;
 	int screen_fd;
 	g15canvas *canvas;
 
@@ -190,7 +187,6 @@ int setKeyBoard(G15AppsData *this){
 	this->numOfScreens=0;
 	this->lastPressedKey=-1;
 	this->BrightnessLevel=-1;
-	this->MKeysState=-1;
 
 	return EXIT_SUCCESS;
 }
@@ -230,19 +226,64 @@ int getScreenFDByID(G15AppsData *this, int screenID){
 
 
 int invokeDrawFunc(G15AppsData* this, int screenID){
-	drawFuncPtrDef draw = getDrawFunc(this->screens[screenID]);
-	G15Screen* scrn = getScreen(this, screenID);
-	draw((G15Screen*)scrn);		//Invokation
+	this->screens[screenID]->drawFunc(getScreen(this, screenID));
 	return EXIT_SUCCESS;
 }
-int invokeAllDrawFuncs(G15AppsData *this){
+void colorSlideMKeys(G15Screen* this){
 	int i;
-	for(i=0; i<this->numOfScreens ; i++){
+	lightMKey(this, G15_LED_M1);
+	sleep(0.5);
+	lightMKey(this, G15_LED_M2);
+	sleep(0.5);
+	lightMKey(this, G15_LED_M3);
+	sleep(0.5);
+	unlightMKey(this, G15_LED_M1);
+	unlightMKey(this, G15_LED_M2);
+	unlightMKey(this, G15_LED_M3);
+	sleep(0.5);
+	lightMKey(this, G15_LED_M1);
+	sleep(0.5);
+	lightMKey(this, G15_LED_M2);
+	sleep(0.5);
+	lightMKey(this, G15_LED_M3);
+	sleep(0.5);
+	unlightMKey(this, G15_LED_M1);
+	unlightMKey(this, G15_LED_M2);
+	unlightMKey(this, G15_LED_M3);
+
+	sleep(0.5);
+	lightMKey(this, G15_LED_M1);
+	sleep(0.5);
+	lightMKey(this, G15_LED_M2);
+	sleep(0.5);
+	lightMKey(this, G15_LED_M3);
+	sleep(0.5);
+	unlightMKey(this, G15_LED_M1);
+	unlightMKey(this, G15_LED_M2);
+	unlightMKey(this, G15_LED_M3);
+	sleep(0.5);
+	lightMKey(this, G15_LED_M1);
+	sleep(0.5);
+	lightMKey(this, G15_LED_M2);
+	sleep(0.5);
+	lightMKey(this, G15_LED_M3);
+	sleep(0.5);
+	unlightMKey(this, G15_LED_M1);
+	unlightMKey(this, G15_LED_M2);
+	unlightMKey(this, G15_LED_M3);
+
+}
+int invokeAllDrawFuncs(G15AppsData* this){
+	int i;
+	for(i=0; i<this->numOfScreens ; i++){	//Last in first out.
 		int ret = invokeDrawFunc(this, i);
 		if(ret == EXIT_FAILURE)
 			return EXIT_FAILURE;
 	}
-	return EXIT_SUCCESS;
+	//g15_send_cmd(this->screens[0]->screen_fd, G15DAEMON_SWITCH_PRIORITIES, i);
+	colorSlideMKeys(this->screens[0]);
+	g15_send_cmd(this->screens[0]->screen_fd, G15DAEMON_SWITCH_PRIORITIES, i);
+	return EXIT_SUCCESS&i;
 }
 void deleteAllScreens(G15AppsData *this){
 	int i;
@@ -264,13 +305,25 @@ void updateNClearScreen(int g15screen_fd, g15canvas* canvas){
 		g15_send (g15screen_fd, (char *) canvas->buffer, G15_BUFFER_LEN);
 	g15r_clearScreen (canvas, G15_COLOR_WHITE);
 }
-int lightMKey(int screenFD, int G15_KEY){
-	unsigned char sh=NULL;
-	int ret1, ret2; //TODO Add timeout error
-	ret1 = g15_send_cmd (screenFD, G15DAEMON_MKEYLEDS, (G15_LED_M1 | sh ));
-	ret2 = g15_recv_oob_answer(screenFD);
+int lightMKey(G15Screen *this, int G15_KEY){
+	this->MKeysState = this->MKeysState | G15_KEY;
+	int ret1, ret2, ret3, ret4; //TODO Add timeout error
+	ret1 = g15_send_cmd (this->screen_fd, G15DAEMON_MKEYLEDS, (this->MKeysState));
+	ret2 = g15_recv_oob_answer(this->screen_fd);
+	g15_send_cmd(this->screen_fd, G15DAEMON_SWITCH_PRIORITIES, ret3);
+	g15_send_cmd(this->screen_fd, G15DAEMON_SWITCH_PRIORITIES, ret4);
 
-	return (ret1&&ret2);
+	return (ret1&&ret2&&ret3&&ret4);
+}
+int unlightMKey(G15Screen *this, int G15_KEY){
+	this->MKeysState = this->MKeysState & G15_KEY;
+	int ret1, ret2, ret3, ret4; //TODO Add timeout error
+	ret1 = g15_send_cmd (this->screen_fd, G15DAEMON_MKEYLEDS, (this->MKeysState));
+	ret2 = g15_recv_oob_answer(this->screen_fd);
+	g15_send_cmd(this->screen_fd, G15DAEMON_SWITCH_PRIORITIES, ret3);
+	g15_send_cmd(this->screen_fd, G15DAEMON_SWITCH_PRIORITIES, ret4);
+
+	return (ret1&&ret2&&ret3&&ret4);
 }
 
 
@@ -282,6 +335,7 @@ int setScreen(G15Screen *this, char* name,  int (*drawFuncPtr)(G15Screen*)){
 	this->id = ID;
 	ID++;
 	this->name = name;
+	this->MKeysState=0;
 	this->drawFunc = drawFuncPtr;
 
 	this->background=0;

@@ -36,6 +36,7 @@
 typedef struct G15AppsData_s G15AppsData;
 typedef struct G15Screen_s G15Screen;
 typedef int (*drawFuncPtrDef)(G15Screen*);
+typedef int (*lightMKeyPtrDef)(G15Screen*, int);
 G15AppsData *newKeyboard();				//Constuctor
 int setKeyBoard(G15AppsData *this);
 void* getHandlerThread(G15AppsData *this);
