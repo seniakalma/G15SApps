@@ -7,43 +7,8 @@ int main (int argc, char *argv[])
 	long page_size = sysconf(_SC_PAGE_SIZE);
 	long st = pages * page_size;
 	st/=1000*1000;*/
-	double load[3];
-	int i=0;
-
-	int** cores = malloc(getNumberOfCores() * sizeof(int));
-
-	for(;;)
-	{
-		printf("Number Of cores: %d \n", getNumberOfCores());
-		for(i=0;i<getNumberOfCores();i++)
-			printf("Core %d utilization is : %f \n", i, getCPULoadByCore(i));
-		printf("Total avraged CPU utilization is : %f \n", getCurrentValue());
-
-		if (getloadavg(load, 3) != -1)
-			printf("load average : %f , %f , %f\n", load[0],load[1],load[2]);
 
 
-		printf("Total physical mem: %f \n", getTotalPhysicalMem());
-		printf("Used physical mem: %f \n", getUsedPhysicalMem());
-
-		printf("Total virtual mem: %f \n", getTotalVirtualMem());
-		printf("Used virtual mem: %f \n\n", getUsedVirutalMem());
-		printf("===================================\n");
-		sleep(2);
-	}
-
-	for(;;){
-		printf("Number Of cores: %d \n", getNumberOfCores());
-		printf("Current value: %f \n", getCurrentValue());
-
-		printf("Total physical mem: %f \n", getTotalPhysicalMem());
-		printf("Used physical mem: %f \n", getUsedPhysicalMem());
-
-		printf("Total virtual mem: %f \n", getTotalVirtualMem());
-		printf("Used virtual mem: %f \n\n", getUsedVirutalMem());
-
-		sleep(3);
-	}
 /*
 	FILE *cpuInfo;
 	cpuInfo = fopen("/proc/cpuinfo","r");
@@ -94,7 +59,10 @@ int main (int argc, char *argv[])
 
 
 	//Create second screen(Test)
-	G15Screen* testScreen = (G15Screen*)createNewScreen(G15Keyboard, "Test", &drawTest);
+	//G15Screen* testScreen = (G15Screen*)createNewScreen(G15Keyboard, "Test", &drawTest);
+
+	//Create third screen(CPU & RAM)
+	G15Screen* CPURAMScreen = (G15Screen*)createNewScreen(G15Keyboard, "CPU&RAM", &drawCPURAM);
 
 
 

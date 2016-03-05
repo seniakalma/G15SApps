@@ -63,11 +63,15 @@ void deleteAllScreens(G15AppsData *this);
 void updateNClearScreen(int g15screen_fd, g15canvas* canvas);
 int drawLogo(G15Screen* screen);
 int drawTest(G15Screen* screen);
+int drawCPURAM(G15Screen* screen);
 void keyboardHandlerThread(G15AppsData * Keyboard);
 
 
 //won't show from libg15render.h somewhy..
 int g15r_ttfLoad (g15canvas * canvas, char *fontname, int fontsize, int face_num);
 void g15r_ttfPrint (g15canvas * canvas, int x, int y, int fontsize, int face_num, int color, int center, char *print_string);
+
+//Other
+void colorSlidesM(G15Screen* this);
 
 #endif /* G15SAPPS_H_ */

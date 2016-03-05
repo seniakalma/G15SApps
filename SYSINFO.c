@@ -70,25 +70,47 @@ double getCPULoadByCore(int core){
 }
 
 // TODO: FINISH THIS, READ ALL DATA AT ONCE.
-int** getCPUCoresLoad(int numOfCores){
-	int i;
-	long double a[4], b[4], loadavg;
+int* getCPUCoresLoad(int numOfCores){
+	++numOfCores;
+	float* res = (float*) malloc(numOfCores * sizeof(float));
+	float** arrA = (float**) malloc(numOfCores * sizeof(float*)); //a pointer-to-pointer-to-float
+	float** arrB = (float**) malloc(numOfCores * sizeof(float*)); //a pointer-to-pointer-to-float
+	unsigned int i;
+	long double a[numOfCores][4], b[numOfCores][4], loadavg;
 	FILE *fp;
 	char dump[50];
+	float tempRes;
 
     fp = fopen("/proc/stat","r");
-    for(i=1;i<numOfCores+1;i++)
-    	fscanf(fp,"%*s %Lf %Lf %Lf %Lf",&a[0],&a[1],&a[2],&a[3]);
+    for(i=0;i<numOfCores;i++){
+    	arrA[i] = (float*) malloc(4 * sizeof(float));
+    	fscanf(fp,"%*s %f %f %f %f",&arrA[i][0], &arrA[i][1], &arrA[i][2], &arrA[i][3]);
+    	fscanf(fp,"%*s %Lf %Lf %Lf %Lf",&a[i][0],&a[i][1],&a[i][2],&a[i][3]);
+    }
     fclose(fp);
     sleep(1);
 
     fp = fopen("/proc/stat","r");
-    fscanf(fp,"%*s %Lf %Lf %Lf %Lf",&b[0],&b[1],&b[2],&b[3]);
+    for(i=0;i<numOfCores;i++){
+    	arrB[i] = (float*) malloc(4 * sizeof(float));
+    	fscanf(fp,"%f %f %f %f",&arrB[i][0], &arrB[i][1], &arrB[i][2], &arrB[i][3]);
+    	fscanf(fp,"%*s %Lf %Lf %Lf %Lf",&b[i][0],&b[i][1],&b[i][2],&b[i][3]);
+    }
     fclose(fp);
 
-    loadavg = ((b[0]+b[1]+b[2]) - (a[0]+a[1]+a[2])) / ((b[0]+b[1]+b[2]+b[3]) - (a[0]+a[1]+a[2]+a[3]));
+    for(i=0;i<numOfCores;i++){
+    	printf("Got Bs: %f %f %f %f\t",&arrB[i][0], &arrB[i][1], &arrB[i][2], &arrB[i][3]);
+    	tempRes = ((arrB[i][0]+arrB[i][1]+arrB[i][2]) - (arrA[i][0]+arrA[i][1]+arrA[i][2])) /
+    			((arrB[i][0]+arrB[i][1]+arrB[i][2]+arrB[i][3]) - (arrA[i][0]+arrA[i][1]+arrA[i][2]+arrA[i][3]));
+    	printf("Inserting: %f\n", tempRes);
+    	tempRes = ((b[i][0]+b[i][1]+b[i][2]) - (a[i][0]+a[i][1]+a[i][2])) / ((b[i][0]+b[i][1]+b[i][2]+b[i][3]) - (a[i][0]+a[i][1]+a[i][2]+a[i][3]));
+    	printf("Inserting222: %f\n", tempRes);
+    	res[i] = tempRes;
+    }
+    for(i=0;i<numOfCores+1;i++)
+    	printf("result %d: %f\n", i, res[i]);
 
-	return NULL;
+	return res;
 }
 
 

@@ -53,7 +53,82 @@ int drawLogo(G15Screen* screen){
 
 	g15r_ttfPrint (cnv, G15_LCD_WIDTH*0.25, G15_LCD_HEIGHT*0.35, 16, 1, 0, 1, "Senia Kalma");
 	updateNClearScreen(screenFD, cnv);
+	//g15r_clearScreen (cnv, 0);
+
+	return EXIT_SUCCESS;
+}
+
+void printStats(){
+	double load[3];
+	int i=0;
+
+	for(;;)
+	{
+		printf("Number Of cores: %d \n", getNumberOfCores());
+		for(i=0;i<getNumberOfCores();i++)
+			printf("Core %d utilization is : %f \n", i, getCPULoadByCore(i));
+		printf("Total avraged CPU utilization is : %f \n", getCurrentValue());
+
+		if (getloadavg(load, 3) != -1)
+			printf("load average : %f , %f , %f\n", load[0],load[1],load[2]);
+
+
+		printf("Total physical mem: %f \n", getTotalPhysicalMem());
+		printf("Used physical mem: %f \n", getUsedPhysicalMem());
+
+		printf("Total virtual mem: %f \n", getTotalVirtualMem());
+		printf("Used virtual mem: %f \n\n", getUsedVirutalMem());
+		printf("===================================\n");
+		sleep(2);
+	}
+}
+
+int drawCPURAM(G15Screen* screen){
+	int screenFD = getScreenFD(screen);
+	g15canvas* cnv = getCanvas(screen);
+	int cores= getNumberOfCores();
+	double load[3];
+	float CPULoad = getCurrentValue();
+	float RAMLoad = (float)getUsedPhysicalMem()/(float)getTotalPhysicalMem();
+	int RAMLen;
+
 	g15r_clearScreen (cnv, 0);
+	//CPU text & bar
+	g15r_ttfPrint (cnv, 10, 2, 10, 1, 0, 0, "CPU:");
+	g15r_pixelBox(cnv, 10, 12, (G15_LCD_WIDTH-10), 12+(2*cores), G15_COLOR_WHITE, 1, 0);
+
+	//RAM text & bar
+	g15r_ttfPrint (cnv, 10, 16+(2*cores), 10, 1, 0, 0, "RAM:");
+	g15r_pixelBox(cnv, 10, 26+(2*cores), (G15_LCD_WIDTH-10), (G15_LCD_HEIGHT-1), G15_COLOR_WHITE, 1, 0);	//outer
+	RAMLen = ((G15_LCD_WIDTH-11)-11);
+	g15r_pixelBox(cnv, 12, 28+(2*cores), 11+(RAMLen*RAMLoad), (G15_LCD_HEIGHT-3), G15_COLOR_WHITE, 1, 1);	//Fill
+
+	//CPU Percent & load(1, 5, 15 min)
+	char int_string[5];
+	sprintf(int_string, "%d", (int)(CPULoad*100));
+	char CPUString[10] = "%";
+	strcat(int_string, CPUString);
+	g15r_ttfPrint (cnv, (G15_LCD_WIDTH-35), 2, 10, 1, 0, 0, int_string);
+
+	getloadavg(load, 3);
+	char loadString[30] = "| ";
+	sprintf(int_string, "%.2f", (float)(load[0]));
+	strcat(loadString, int_string);
+	strcat(loadString, "%, ");
+	sprintf(int_string, "%.2f", (float)(load[1]));
+	strcat(loadString, int_string);
+	strcat(loadString, "%, ");
+	sprintf(int_string, "%.2f", (float)(load[2]));
+	strcat(loadString, int_string);
+	strcat(loadString, "% |");
+	g15r_ttfPrint (cnv, (G15_LCD_WIDTH-25)/2-23, 4, 5, 1, 0, 0, loadString);
+
+	//RAM Percent
+	sprintf(int_string, "%d", (int)(RAMLoad*100));
+	char RAMString[10] = "%";
+	strcat(int_string, RAMString);
+	g15r_ttfPrint (cnv, (G15_LCD_WIDTH-35), 16+(2*cores), 10, 1, 0, 0, int_string);
+	updateNClearScreen(screenFD, cnv);
 
 	return EXIT_SUCCESS;
 }
@@ -75,6 +150,7 @@ void keyboardHandlerThread(G15AppsData * Keyboard) {
 		printf("return val is:, stam: %d\n", stam);
 		usleep(1*SEC2MICRO);
 		while(1) {
+			drawCPURAM((G15Screen*)getScreen(Keyboard, 1));
 			//printf("keyState: %d L1: %d L2: %d L3: %d L4: %d L5: %d\n",pressedKey, G15_KEY_L1, G15_KEY_L2, G15_KEY_L3, G15_KEY_L4, G15_KEY_L5);
 			recv(screenFD,&pressedKey,4,0);
 			retval = g15_send_cmd (screenFD, G15DAEMON_IS_FOREGROUND, 0);
@@ -229,50 +305,8 @@ int invokeDrawFunc(G15AppsData* this, int screenID){
 	this->screens[screenID]->drawFunc(getScreen(this, screenID));
 	return EXIT_SUCCESS;
 }
-void colorSlideMKeys(G15Screen* this){
-	int i;
-	lightMKey(this, G15_LED_M1);
-	sleep(0.5);
-	lightMKey(this, G15_LED_M2);
-	sleep(0.5);
-	lightMKey(this, G15_LED_M3);
-	sleep(0.5);
-	unlightMKey(this, G15_LED_M1);
-	unlightMKey(this, G15_LED_M2);
-	unlightMKey(this, G15_LED_M3);
-	sleep(0.5);
-	lightMKey(this, G15_LED_M1);
-	sleep(0.5);
-	lightMKey(this, G15_LED_M2);
-	sleep(0.5);
-	lightMKey(this, G15_LED_M3);
-	sleep(0.5);
-	unlightMKey(this, G15_LED_M1);
-	unlightMKey(this, G15_LED_M2);
-	unlightMKey(this, G15_LED_M3);
 
-	sleep(0.5);
-	lightMKey(this, G15_LED_M1);
-	sleep(0.5);
-	lightMKey(this, G15_LED_M2);
-	sleep(0.5);
-	lightMKey(this, G15_LED_M3);
-	sleep(0.5);
-	unlightMKey(this, G15_LED_M1);
-	unlightMKey(this, G15_LED_M2);
-	unlightMKey(this, G15_LED_M3);
-	sleep(0.5);
-	lightMKey(this, G15_LED_M1);
-	sleep(0.5);
-	lightMKey(this, G15_LED_M2);
-	sleep(0.5);
-	lightMKey(this, G15_LED_M3);
-	sleep(0.5);
-	unlightMKey(this, G15_LED_M1);
-	unlightMKey(this, G15_LED_M2);
-	unlightMKey(this, G15_LED_M3);
 
-}
 int invokeAllDrawFuncs(G15AppsData* this){
 	int i;
 	for(i=0; i<this->numOfScreens ; i++){	//Last in first out.
@@ -281,7 +315,7 @@ int invokeAllDrawFuncs(G15AppsData* this){
 			return EXIT_FAILURE;
 	}
 	//g15_send_cmd(this->screens[0]->screen_fd, G15DAEMON_SWITCH_PRIORITIES, i);
-	colorSlideMKeys(this->screens[0]);
+	colorSlidesM(this->screens[0]);
 	g15_send_cmd(this->screens[0]->screen_fd, G15DAEMON_SWITCH_PRIORITIES, i);
 	return EXIT_SUCCESS&i;
 }
@@ -307,7 +341,7 @@ void updateNClearScreen(int g15screen_fd, g15canvas* canvas){
 }
 int lightMKey(G15Screen *this, int G15_KEY){
 	this->MKeysState = this->MKeysState | G15_KEY;
-	int ret1, ret2, ret3, ret4; //TODO Add timeout error
+	int ret1, ret2, ret3=0, ret4=0; //TODO Add timeout error
 	ret1 = g15_send_cmd (this->screen_fd, G15DAEMON_MKEYLEDS, (this->MKeysState));
 	ret2 = g15_recv_oob_answer(this->screen_fd);
 	g15_send_cmd(this->screen_fd, G15DAEMON_SWITCH_PRIORITIES, ret3);
@@ -317,13 +351,31 @@ int lightMKey(G15Screen *this, int G15_KEY){
 }
 int unlightMKey(G15Screen *this, int G15_KEY){
 	this->MKeysState = this->MKeysState & G15_KEY;
-	int ret1, ret2, ret3, ret4; //TODO Add timeout error
+	int ret1, ret2, ret3=0, ret4=0; //TODO Add timeout error
 	ret1 = g15_send_cmd (this->screen_fd, G15DAEMON_MKEYLEDS, (this->MKeysState));
 	ret2 = g15_recv_oob_answer(this->screen_fd);
 	g15_send_cmd(this->screen_fd, G15DAEMON_SWITCH_PRIORITIES, ret3);
 	g15_send_cmd(this->screen_fd, G15DAEMON_SWITCH_PRIORITIES, ret4);
 
 	return (ret1&&ret2&&ret3&&ret4);
+}
+void colorSlideMKeys(G15Screen* this){
+	lightMKey(this, G15_LED_M1);
+	sleep(0.5);
+	lightMKey(this, G15_LED_M2);
+	sleep(0.5);
+	lightMKey(this, G15_LED_M3);
+	sleep(0.5);
+	unlightMKey(this, G15_LED_M1);
+	unlightMKey(this, G15_LED_M2);
+	unlightMKey(this, G15_LED_M3);
+}
+void colorSlidesM(G15Screen* this){
+	unsigned i;
+	for(i=0;i<1;i++){
+		colorSlideMKeys(this);
+		sleep(0.5);
+	}
 }
 
 
