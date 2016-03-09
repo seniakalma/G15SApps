@@ -2,14 +2,73 @@
 
 int main (int argc, char *argv[])
 {
+	/*while(1)
+	{
+	   usleep(1*SEC2MICRO);
+	   printf("--=========================--\n");
+		LinuxProcessList_scanCPUTime(this);
+		LinuxProcessList_scanMemoryInfo(&this->super);
+		printf("Swap use: %llu / %llu \n ",this->super.usedMem/1024, this->super.totalMem/1024);
+			for(i=0;i<this->super.cpuCount;i++){
+			long double ret = Platform_setCPUValues(&this->cpus[i]);
+			printf("CPU %d: %Lf \n ",i ,ret);
+		}
+	}*/
 
-	/*long pages = sysconf(_SC_PHYS_PAGES);
-	long page_size = sysconf(_SC_PAGE_SIZE);
-	long st = pages * page_size;
-	st/=1000*1000;*/
+	printf("New, Width: %d, Height: %d\n", G15_LCD_WIDTH, G15_LCD_HEIGHT);
+	G15AppsData *G15Keyboard = newKeyboard();
+	setKeyBoard(G15Keyboard);
+
+	//ret = g15_send_cmd (screenFD, G15DAEMON_MKEYLEDS, G15_LED_M1 | G15_LED_M2 | sh);
+
+	//Create first screen(SENIA KALMA)
+	G15Screen* logoScreen = createNewScreen(G15Keyboard,"SENIA LOGO", &drawLogo, NULL );
+
+
+
+	//Create second screen(Test)
+	//G15Screen* testScreen = (G15Screen*)createNewScreen(G15Keyboard, "Test", &drawTest);
+
+	//Create third screen(CPU & RAM)
+	G15Screen* CPURAMScreen = (G15Screen*)createNewScreen(G15Keyboard, "CPU&RAM", &drawCPURAM, &updateCPUMEM);
+
+	printf("%d " ,CPURAMScreen);
+
+	//	Draw all screens
+	invokeAllDrawFuncs(G15Keyboard);
+
+
+	//Start a new thread to listen to button presses
+	void* handlThrd = (void*)getHandlerThread(G15Keyboard);
+	pthread_create(handlThrd, NULL, (void*)keyboardHandlerThread,(void*)G15Keyboard);
+	void* updaterThrd = (void*)getUpdaterThread(G15Keyboard);
+	pthread_create(updaterThrd, NULL, (void*)updaterThread,(void*)G15Keyboard);
+
+	sleep(10000);
+
+	deleteKeyBoard(G15Keyboard);
+	g15canvas* cnv = getCanvasByID(G15Keyboard, 0);
+	if(cnv!=NULL){
+		cnv->mode_reverse = 0;
+		g15r_clearScreen (getCanvasByID(G15Keyboard, 0), G15_COLOR_WHITE);
+		g15_close_screen (getScreenFDByID(G15Keyboard, 0));
+
+	}
+	else
+		assert(cnv==NULL);
+
+	return 0;
+}
 
 
 /*
+ 	long pages = sysconf(_SC_PHYS_PAGES);
+	long page_size = sysconf(_SC_PAGE_SIZE);
+	long st = pages * page_size;
+	st/=1000*1000;
+
+
+
 	FILE *cpuInfo;
 	cpuInfo = fopen("/proc/cpuinfo","r");
     char line[256];
@@ -44,48 +103,4 @@ int main (int argc, char *argv[])
 	}
 	free(arg);
 	fclose(cpuinfo);
-
-
 */
-	printf("New, Width: %d, Hight: %d\n", G15_LCD_WIDTH, G15_LCD_HEIGHT);
-	G15AppsData *G15Keyboard = newKeyboard();
-	setKeyBoard(G15Keyboard);
-
-	//ret = g15_send_cmd (screenFD, G15DAEMON_MKEYLEDS, G15_LED_M1 | G15_LED_M2 | sh);
-
-	//Create first screen(SENIA KALMA)
-	G15Screen* logoScreen = createNewScreen(G15Keyboard,"SENIA LOGO", &drawLogo );
-
-
-
-	//Create second screen(Test)
-	//G15Screen* testScreen = (G15Screen*)createNewScreen(G15Keyboard, "Test", &drawTest);
-
-	//Create third screen(CPU & RAM)
-	G15Screen* CPURAMScreen = (G15Screen*)createNewScreen(G15Keyboard, "CPU&RAM", &drawCPURAM);
-
-
-
-	//	Draw all screens
-	invokeAllDrawFuncs(G15Keyboard);
-
-
-	//Start a new thread to listen to button presses
-	void* handlThrd = (void*)getHandlerThread(G15Keyboard);
-	pthread_create(handlThrd, NULL, (void*)keyboardHandlerThread,(void*)G15Keyboard);
-
-	sleep(10000);
-
-	deleteKeyBoard(G15Keyboard);
-	g15canvas* cnv = getCanvasByID(G15Keyboard, 0);
-	if(cnv!=NULL){
-		cnv->mode_reverse = 0;
-		g15r_clearScreen (getCanvasByID(G15Keyboard, 0), G15_COLOR_WHITE);
-		g15_close_screen (getScreenFDByID(G15Keyboard, 0));
-
-	}
-	else
-		assert(cnv==NULL);
-
-	return 0;
-}

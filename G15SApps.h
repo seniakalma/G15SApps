@@ -11,6 +11,7 @@
 #define TTF_SUPPORT 1
 
 #include <stdio.h>
+#include <time.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -28,6 +29,7 @@
 #include <libg15render.h>
 #include <g15daemon_client.h>
 
+#include "Platform.h"
 #include "SYSINFO.h"
 
 #define SEC2MICRO 1000000
@@ -36,10 +38,12 @@
 typedef struct G15AppsData_s G15AppsData;
 typedef struct G15Screen_s G15Screen;
 typedef int (*drawFuncPtrDef)(G15Screen*);
+typedef void (*updateFuncPtrDef)(G15AppsData*);
 typedef int (*lightMKeyPtrDef)(G15Screen*, int);
 G15AppsData *newKeyboard();				//Constuctor
 int setKeyBoard(G15AppsData *this);
 void* getHandlerThread(G15AppsData *this);
+void* getUpdaterThread(G15AppsData *this);
 G15Screen* getScreen(G15AppsData *this, int screenID);
 int getScreenFDByID(G15AppsData *this, int screenID);
 g15canvas* getCanvasByID(G15AppsData *this, int screenID);
@@ -51,8 +55,8 @@ void deleteKeyBoard(G15AppsData *this);	//De-stractor
 
 //		###  "Class" Screen  ###
 G15Screen *newScreen();				//Constuctor
-G15Screen* createNewScreen(G15AppsData *this,char* name, int (*drawFuncPtr)(G15Screen*));
-int setScreen(G15Screen *this, char* name,  int (*drawFuncPtr)(G15Screen*));
+G15Screen* createNewScreen(G15AppsData *this, char* name, int (*drawPtr)(G15Screen*), void (*updatePtr)(G15AppsData*));
+int setScreen(G15Screen *this, char* name,  int (*drawFuncPtr)(G15Screen*), void (*updateFuncPtr)(G15AppsData*));
 
 int getScreenFD(G15Screen *this);
 g15canvas* getCanvas(G15Screen *this);
@@ -63,8 +67,10 @@ void deleteAllScreens(G15AppsData *this);
 void updateNClearScreen(int g15screen_fd, g15canvas* canvas);
 int drawLogo(G15Screen* screen);
 int drawTest(G15Screen* screen);
+void updateCPUMEM(G15AppsData* this);
 int drawCPURAM(G15Screen* screen);
-void keyboardHandlerThread(G15AppsData * Keyboard);
+void keyboardHandlerThread(G15AppsData* Keyboard);
+void updaterThread(G15AppsData* Keyboard);
 
 
 //won't show from libg15render.h somewhy..

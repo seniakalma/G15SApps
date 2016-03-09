@@ -25,7 +25,7 @@ void init(){
 }
 
 
-double getCurrentValue(){
+double getCPULoad(){
 	long double a[4], b[4], loadavg;
 	FILE *fp;
 	char dump[50];
@@ -57,7 +57,8 @@ double getCPULoadByLine(int line){
     sleep(1);
 
     fp = fopen("/proc/stat","r");
-    fscanf(fp,"%*s %Lf %Lf %Lf %Lf",&b[0],&b[1],&b[2],&b[3]);
+    for(i=0;i<line;i++)
+    	fscanf(fp,"%*s %Lf %Lf %Lf %Lf",&b[0],&b[1],&b[2],&b[3]);
     fclose(fp);
 
     loadavg = ((b[0]+b[1]+b[2]) - (a[0]+a[1]+a[2])) / ((b[0]+b[1]+b[2]+b[3]) - (a[0]+a[1]+a[2]+a[3]));
@@ -70,9 +71,57 @@ double getCPULoadByCore(int core){
 }
 
 // TODO: FINISH THIS, READ ALL DATA AT ONCE.
-int* getCPUCoresLoad(int numOfCores){
+long double* getCPUCoresLoad(int numOfCores){
 	++numOfCores;
-	float* res = (float*) malloc(numOfCores * sizeof(float));
+
+	int i;
+	FILE *fp;
+	long double loadAvg;
+	long double* res;
+	long double** arrA;
+	long double** arrB;
+
+	res = malloc(numOfCores * sizeof(long double));
+	arrA = malloc(numOfCores * sizeof(long double*));
+	arrB = malloc(numOfCores * sizeof(long double*));
+	for (i = 0; i < numOfCores; i++) {
+	  arrA[i] = malloc(4 * sizeof(long double));
+	  arrB[i] = malloc(4 * sizeof(long double));
+	}
+
+
+
+    fp = fopen("/proc/stat","r");
+    for(i=0;i<numOfCores;i++){
+    	//fscanf(fp,"%*s %Lf %Lf %Lf %Lf",&a[i][0],&a[i][1],&a[i][2],&a[i][3]);
+    	fscanf(fp,"%*s %Lf %Lf %Lf %Lf",&arrA[i][0],&arrA[i][1],&arrA[i][2],&arrA[i][3]);
+    }
+    fclose(fp);
+    sleep(1);
+
+    fp = fopen("/proc/stat","r");
+    for(i=0;i<numOfCores;i++){
+    	//fscanf(fp,"%*s %Lf %Lf %Lf %Lf",&a[i][0],&a[i][1],&a[i][2],&a[i][3]);
+    	fscanf(fp,"%*s %Lf %Lf %Lf %Lf",&arrB[i][0],&arrB[i][1],&arrB[i][2],&arrB[i][3]);
+    }
+    fclose(fp);
+
+    for(i=0;i<numOfCores;i++){
+    	loadAvg = ((arrB[i][0]+arrB[i][1]+arrB[i][2]) - (arrA[i][0]+arrA[i][1]+arrA[i][2])) /
+    			((arrB[i][0]+arrB[i][1]+arrB[i][2]+arrB[i][3]) - (arrA[i][0]+arrA[i][1]+arrA[i][2]+arrA[i][3]));
+    	res[i] = loadAvg;
+    }
+	for (i = 0; i < numOfCores; i++) {
+	  free(arrA[i]);
+	  free(arrB[i]);
+	  printf("result: %Lf %Lf %Lf %Lf\n", res[0], res[1], res[2], res[3]);
+	}
+	free(arrA);
+	free(arrB);
+
+	return res;
+
+	/*float* res = (float*) malloc(numOfCores * sizeof(float));
 	float** arrA = (float**) malloc(numOfCores * sizeof(float*)); //a pointer-to-pointer-to-float
 	float** arrB = (float**) malloc(numOfCores * sizeof(float*)); //a pointer-to-pointer-to-float
 	unsigned int i;
@@ -107,10 +156,11 @@ int* getCPUCoresLoad(int numOfCores){
     	printf("Inserting222: %f\n", tempRes);
     	res[i] = tempRes;
     }
-    for(i=0;i<numOfCores+1;i++)
-    	printf("result %d: %f\n", i, res[i]);
+    for(i=0;i<numOfCores;i++){
+    	printf("result %d: %f, A: %f %f %f %f\n", i, res[i], a[i][0], a[i][1], a[i][2], a[i][03]);
+    }
 
-	return res;
+	return res;*/
 }
 
 
