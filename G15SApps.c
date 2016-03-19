@@ -322,6 +322,38 @@ void updateCPUMEM(G15AppsData* this){
 	this->screens[CPUMEMScreen]->values[1][1] = this->lpl->super.totalMem;
 }
 
+void updateNews(G15AppsData* this){
+	int CPUMEMScreen;
+	int i;
+	bool Bflag=0;
+	LinuxProcessList_scanMemoryInfo(&this->lpl->super);
+	LinuxProcessList_scanCPUTime(this->lpl);
+	for(i=0; i<this->numOfScreens; i++){
+		if(strcmp(this->screens[i]->name, "CPU&RAM")==0){	//If the two strings are equal, strcmp returns 0.
+			CPUMEMScreen = i;
+			Bflag=1;
+		}
+		if(Bflag)
+			break;
+	}
+	if(this->screens[CPUMEMScreen]->values == NULL){
+		this->screens[CPUMEMScreen]->values = malloc(2 * sizeof(double*));
+		this->screens[CPUMEMScreen]->values[0] = malloc(this->lpl->super.cpuCount * sizeof(double));	//allocate memory for the CPU info
+		this->screens[CPUMEMScreen]->values[0][0] = this->lpl->super.cpuCount;	//first time set cpuCount as the first value in values.
+	}
+
+	for(i=1; i< (this->lpl->super.cpuCount+1);i++)		//first place reserved for number of cores.
+		this->screens[CPUMEMScreen]->values[0][i] = (Platform_setCPUValues(&this->lpl->cpus[i])/100);
+
+	/*for(i=1; i<this->lpl->super.cpuCount;i++)
+		printf("CPU Val %d is: %f \n" , i ,this->screens[CPUMEMScreen]->values[0][i] );*/
+
+	//Memory part
+	this->screens[CPUMEMScreen]->values[1] = malloc(2 * sizeof(int));	//allocate memory for the Memory
+	this->screens[CPUMEMScreen]->values[1][0] = this->lpl->super.usedMem;
+	this->screens[CPUMEMScreen]->values[1][1] = this->lpl->super.totalMem;
+}
+
 int Meter_humanUnit(char* buffer, unsigned long int value, int size) {
    const char * prefix = "KMGTPEZY";
    unsigned long int powi = 1;
@@ -351,6 +383,74 @@ int Meter_humanUnit(char* buffer, unsigned long int value, int size) {
       precision, (double) value / powi, *prefix);
 
    return written;
+}
+
+int drawNews(G15Screen* this){
+	if(this->values == NULL)	//If no values set by updateCPUMEM function, return.
+		return EXIT_FAILURE;
+	int cores= this->values[0][0];
+	double load[3];
+	float coreLoad, CPULoad = this->values[0][1];	//CPULOAD = Total CPU load
+	float RAMLoad = (float)this->values[1][0]/(float)this->values[1][1];
+	char* buf;
+	/*int wri  = Meter_humanUnit(buf, this->values[1][0], 5);
+	printf("org: %f writ: %s\n",this->values[1][0], buf );
+	wri  = Meter_humanUnit(buf, this->values[1][1], 5);
+	printf("org2: %f writ2: %s\n",this->values[1][1], buf );*/
+
+	//CPULoad = (updateCPUMEM(lpl)/100);
+
+	int i, innerLineLen;
+	innerLineLen = ((G15_LCD_WIDTH-11)-12);	//Midlle part, <11>| ********* |<12>
+
+	int screenFD = getScreenFD(this);
+	g15canvas* cnv = getCanvas(this);
+
+	/*for(i=0; i<(cores);i++)
+		printf("CPU Val(inside) %d is: %f \n" , i ,this->values[i] );*/
+
+	g15r_clearScreen (cnv, 0);
+	//CPU text & bar
+	g15r_ttfPrint (cnv, 10, 2, 10, 1, 0, 0, "CPU:");
+	g15r_pixelBox(cnv, 10, 12, (G15_LCD_WIDTH-10), 13+(2*cores), G15_COLOR_WHITE, 1, 0);	//outer
+	for(i=1; i<cores; i++){																		//inner(by cores)
+		coreLoad = this->values[0][i];
+		g15r_drawLine(cnv, 12, 12+(i*2), 12 + (innerLineLen*coreLoad), 12+(i*2), 0);
+		g15r_drawLine(cnv, 12, 13+(i*2), 12 + (innerLineLen*coreLoad), 13+(i*2), 0);
+	}
+
+	//RAM text & bar
+	g15r_ttfPrint (cnv, 10, 16+(2*cores), 10, 1, 0, 0, "RAM:");
+	g15r_pixelBox(cnv, 10, 26+(2*cores), (G15_LCD_WIDTH-10), (G15_LCD_HEIGHT-1), G15_COLOR_WHITE, 1, 0);	//outer
+	g15r_pixelBox(cnv, 12, 28+(2*cores), 12+(innerLineLen*RAMLoad), (G15_LCD_HEIGHT-3), G15_COLOR_WHITE, 1, 1);	//Fill
+
+	//CPU Percent & load(1, 5, 15 min)
+	char int_string[5];
+	sprintf(int_string, "%d", (int)(CPULoad*100));
+	char CPUString[10] = "%";
+	strcat(int_string, CPUString);
+	g15r_ttfPrint (cnv, (G15_LCD_WIDTH-35), 2, 10, 1, 0, 0, int_string);
+
+	getloadavg(load, 3);
+	char loadString[30] = "| ";
+	sprintf(int_string, "%.2f", (float)(load[0]));
+	strcat(loadString, int_string);
+	strcat(loadString, "%, ");
+	sprintf(int_string, "%.2f", (float)(load[1]));
+	strcat(loadString, int_string);
+	strcat(loadString, "%, ");
+	sprintf(int_string, "%.2f", (float)(load[2]));
+	strcat(loadString, int_string);
+	strcat(loadString, "% |");
+	g15r_ttfPrint (cnv, (G15_LCD_WIDTH-25)/2-23, 4, 5, 1, 0, 0, loadString);
+
+	//RAM Percent
+	sprintf(int_string, "%d", (int)(RAMLoad*100));
+	char RAMString[10] = "%";
+	strcat(int_string, RAMString);
+	g15r_ttfPrint (cnv, (G15_LCD_WIDTH-35), 16+(2*cores), 10, 1, 0, 0, int_string);
+	updateNClearScreen(screenFD, cnv);
+	return EXIT_SUCCESS;
 }
 
 int drawCPURAM(G15Screen* this){

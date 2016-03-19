@@ -203,7 +203,7 @@ void LinuxProcessList_scanMemoryInfo(ProcessList* this) {
 	}
 	#undef tryRead
 	}
-	this->usedMem = this->totalMem - this->freeMem;
+	this->usedMem = this->totalMem - this->freeMem - this->buffersMem - this->cachedMem;
 	this->cachedMem = this->cachedMem + sreclaimable - shmem;
 	this->usedSwap = this->totalSwap - swapFree;
 	this->freeSwap = swapFree;

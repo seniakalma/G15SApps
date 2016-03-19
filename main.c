@@ -26,13 +26,15 @@ int main (int argc, char *argv[])
 
 
 
-	//Create second screen(Test)
+	//Create Test screen
 	//G15Screen* testScreen = (G15Screen*)createNewScreen(G15Keyboard, "Test", &drawTest);
 
-	//Create third screen(CPU & RAM)
-	G15Screen* CPURAMScreen = (G15Screen*)createNewScreen(G15Keyboard, "CPU&RAM", &drawCPURAM, &updateCPUMEM);
+	//Create CPU & RAM screen
+	G15Screen* CPURAMScreen = (G15Screen*)createNewScreen(G15Keyboard, "CPU&RAM", &drawNews, &updateNews);
 
-	printf("%d " ,CPURAMScreen);
+	//Create NEWS screen
+	//G15Screen* CPURAMScreen = (G15Screen*)createNewScreen(G15Keyboard, "News", &drawNews, &updateCPUMEM);
+
 
 	//	Draw all screens
 	invokeAllDrawFuncs(G15Keyboard);

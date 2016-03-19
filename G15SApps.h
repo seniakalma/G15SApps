@@ -69,6 +69,8 @@ int drawLogo(G15Screen* screen);
 int drawTest(G15Screen* screen);
 void updateCPUMEM(G15AppsData* this);
 int drawCPURAM(G15Screen* screen);
+void updateNews(G15AppsData* this);
+int drawNews(G15Screen* screen);
 void keyboardHandlerThread(G15AppsData* Keyboard);
 void updaterThread(G15AppsData* Keyboard);
 
